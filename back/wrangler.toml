@@ -7,7 +7,8 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 TURNKEY_ORGANIZATION_ID = "6cb5d122-4f67-4bfc-8481-d438c6be2484"
 TURNKEY_API_PUBLIC_KEY = "028cf54e855497941afe8164e90406c54f93f64d18ff2167e875609d2363030048"
-
+WREN_TOKEN_MINT = "7sDJgvdEeUzyZNdGcK94pwsrTwwuv85FsgpTGYvQg5Ki"
+WREN_TOKEN_ACCOUNT = "33rh7uYpWjs1zgtCkbFbQKTxSCfiAAimdydtrs9V8R5N"
 
 # Automatically place your workloads in an optimal location to minimize latency.
 # If you are running back-end logic in a Worker, running it closer to your back-end infrastructure
@@ -73,9 +74,9 @@ database_id = "52b73eb6-e32b-40c2-bf45-9a2ae6c0bed8"
 
 # Bind a KV Namespace. Use KV as persistent storage for small key-value pairs.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#kv-namespaces
-# [[kv_namespaces]]
-# binding = "MY_KV_NAMESPACE"
-# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+[[kv_namespaces]]
+binding = "sessionstore"
+id = "d2a3e4d9b1594a199ce531cb997f47aa"
 
 # Bind an mTLS certificate. Use to present a client certificate when communicating with another service.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#mtls-certificates

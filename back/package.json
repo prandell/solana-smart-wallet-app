@@ -17,6 +17,11 @@
     "wrangler": "^3.0.0"
   },
   "dependencies": {
-    "@turnkey/sdk-server": "^0.2.0"
+    "@solana/spl-token": "^0.4.6",
+    "@solana/web3.js": "^1.91.8",
+    "@turnkey/http": "^2.10.0",
+    "@turnkey/sdk-server": "^0.2.0",
+    "@turnkey/solana": "^0.3.5",
+    "bs58": "^5.0.0"
   }
 }
