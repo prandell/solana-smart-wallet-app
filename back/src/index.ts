@@ -1,9 +1,17 @@
 import { serve } from 'inngest/cloudflare';
 import { WalletWithBalance, mapFromDbUser, mapfromDbWallet } from './models';
-import { createUser, findUserByEmail, findUserBySubOrgId, findWalletForUser, saveWalletForUser } from './inngest/functions/db';
+import {
+	addWrenAddressForUser,
+	createUser,
+	findUserByEmail,
+	findUserBySubOrgId,
+	findWalletForUser,
+	saveWalletForUser,
+} from './inngest/functions/db';
 import { createSession, getSessionData } from './inngest/functions/kv';
 import {
 	createSolanaAccountAddSol,
+	createWrenTokenAccounts,
 	deserialiseSignedTxn,
 	getSolBalance,
 	getTransferWrenTransaction,
@@ -35,6 +43,8 @@ export interface Env {
 	WREN_TOKEN_OWNER_PRIVATE_KEY: string;
 	WREN_TOKEN_MINT: string;
 	WREN_TOKEN_ACCOUNT: string;
+	NONCE_AUTH_PK: string;
+	NONCE_ACCOUNT_PK: string;
 	INGEST_SIGNING_KEY: string;
 	INNGEST_EVENT_KEY: string;
 	DB: D1Database;
@@ -164,7 +174,10 @@ async function handlePost(request: Request, env: Env, inngest: Inngest) {
 
 				//Create Solana Account and attach to wallet
 				const solanaAddress = wallet?.addresses[1] ?? '';
-				await createSolanaAccountAddSol(solanaAddress);
+				const { ids } = await inngest.send({
+					name: 'app/wallet/init-sol',
+					user: { ...user, wallet: { solAddress: solanaAddress } },
+				});
 
 				const sessionId = await createSession(user, env.sessionstore);
 
@@ -207,6 +220,14 @@ async function handlePost(request: Request, env: Env, inngest: Inngest) {
 			try {
 				const dbWallet = await findWalletForUser(user.userId, env.DB);
 				if (dbWallet) {
+					const { wrenAddress, solAddress } = mapfromDbWallet(dbWallet);
+
+					//This has to happen here, as D1 cannot natively be called within inngest functions
+					if (!wrenAddress) {
+						const tokenAccount = await createWrenTokenAccounts(solAddress, env);
+						await addWrenAddressForUser(user.userId, tokenAccount.toBase58(), env.DB);
+					}
+
 					const { ids } = await inngest.send({
 						name: 'app/wallet/drop-tokens',
 						user: { ...user, wallet: mapfromDbWallet(dbWallet) },
@@ -247,13 +268,7 @@ async function handlePost(request: Request, env: Env, inngest: Inngest) {
 						return new Response('No Wren Token available', { status: 403, headers: CORS_HEADERS });
 					}
 
-					const txn = await getTransferWrenTransaction(
-						solAddress,
-						destination,
-						parseFloat(amount),
-						env.WREN_TOKEN_OWNER_PRIVATE_KEY,
-						env.WREN_TOKEN_MINT
-					);
+					const txn = await getTransferWrenTransaction(solAddress, destination, parseFloat(amount), env);
 
 					return new Response(JSON.stringify({ unsignedTransaction: serialiseUnsignedTxn(txn), subOrgId: user.subOrgId }), {
 						headers: {
@@ -277,8 +292,14 @@ async function handlePost(request: Request, env: Env, inngest: Inngest) {
 			}
 
 			try {
-				const res = await sendTransferWrenTokens(deserialiseSignedTxn(signedSendTx));
-				return new Response(JSON.stringify({ res }), {
+				const { ids } = await inngest.send({
+					name: 'app/wallet/send-tx',
+					data: { env, signedSendTx },
+				});
+				console.log(`Inngest ID for transfer: ${ids}`);
+
+				return new Response(null, {
+					status: 200,
 					headers: {
 						'Content-Type': 'application/json',
 						...CORS_HEADERS,

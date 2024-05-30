@@ -140,7 +140,7 @@ export default function Dashboard() {
 
       if (sendRes.status === 200) {
         console.log('Successfully sent! Hash', sendRes.data['hash']);
-        setTxHash(sendRes.data['hash']);
+        // setTxHash(sendRes.data['hash']);
       } else {
         throw new Error(
           `Unexpected response when submitting signed transaction: ${sendRes.status}: ${sendRes.data}`
