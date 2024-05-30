@@ -8,7 +8,7 @@ import {
 	findWalletForUser,
 	saveWalletForUser,
 } from './inngest/functions/db';
-import { createSession, getSessionData } from './inngest/functions/kv';
+import { createSession, deleteSession, getSessionData } from './inngest/functions/kv';
 import {
 	createSolanaAccountAddSol,
 	createWrenTokenAccounts,
@@ -204,6 +204,23 @@ async function handlePost(request: Request, env: Env, inngest: Inngest) {
 			const sessionId = await createSession(user, env.sessionstore);
 			return new Response(JSON.stringify({ sessionId }), {
 				status: res.status,
+				headers: {
+					'Content-Type': 'application/json',
+					...CORS_HEADERS,
+				},
+			});
+		}
+
+		case '/api/logout': {
+			const sessionId = request.headers.get('sessionId');
+			if (sessionId) {
+				const user = await getSessionData(sessionId, env.sessionstore);
+				if (user) {
+					await deleteSession(sessionId, env.sessionstore);
+				}
+			}
+			return new Response(null, {
+				status: 204,
 				headers: {
 					'Content-Type': 'application/json',
 					...CORS_HEADERS,

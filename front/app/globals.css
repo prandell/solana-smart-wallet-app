@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.kwl-loader {
+  width: 80px;
+  aspect-ratio: 1;
+  border: 10px solid #fff;
+  box-sizing: border-box;
+  background: radial-gradient(farthest-side, #000 98%, #0000) 50%/20px 20px,
+    radial-gradient(farthest-side, #000 98%, #0000) 50%/20px 20px,
+    radial-gradient(farthest-side, #000 98%, #0000) 50%/20px 20px,
+    radial-gradient(farthest-side, #000 98%, #0000) 50%/20px 20px,
+    radial-gradient(farthest-side, #000 98%, #0000) 50%/20px 20px,
+    linear-gradient(#000 0 0) 50%/100% 10px,
+    linear-gradient(#000 0 0) 50%/10px 100%, #fff;
+  background-repeat: no-repeat;
+  filter: blur(4px) contrast(10);
+  animation: l13 0.8s infinite;
+}
+@keyframes l13 {
+  100% {
+    background-position: 50% -20px, -20px 50%, 60px 50%, 50% 60px, 50%, 50%, 50%;
+  }
+}

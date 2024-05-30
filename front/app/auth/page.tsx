@@ -141,7 +141,7 @@ export default function Home() {
 
     if (res.status === 200) {
       console.log('Successfully logged in! Redirecting you to dashboard');
-      setItemWithExpiry('sessionId', res.data.sessionId, 1000 * 60 * 60 * 1)
+      setItemWithExpiry('sessionId', res.data.sessionId, 1000 * 60 * 60 * 1);
       mutate(whoamiUrl());
       router.push('/');
       return;
@@ -201,7 +201,7 @@ export default function Home() {
 
     if (res.status === 200) {
       console.log('Successfully registered! Redirecting you to dashboard');
-      setItemWithExpiry('sessionId', res.data.sessionId, 1000 * 60 * 60 * 1)
+      setItemWithExpiry('sessionId', res.data.sessionId, 1000 * 60 * 60 * 1);
       mutate(whoamiUrl());
       router.push('/');
       return;
@@ -216,7 +216,9 @@ export default function Home() {
       <div className="z-10 w-full max-w-md overflow-hidden rounded-2xl border border-gray-100 shadow-xl">
         <div className="flex flex-col items-center justify-center space-y-3 border-b border-gray-200 bg-white px-4 py-6 pt-8 text-center sm:px-16">
           <h3 className="text-xl font-semibold">Sign in</h3>
-          <p className="text-sm text-gray-500">Create an account or login with Passkey</p>
+          <p className="text-sm text-gray-500">
+            Create an account or login with Passkey
+          </p>
         </div>
         <form
           action="#"
@@ -224,36 +226,42 @@ export default function Home() {
           onSubmit={subOrgFormSubmit(registerOrAuthenticate)}
           className="flex flex-col space-y-4 bg-gray-50 px-4 py-8 sm:px-16"
         >
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-xs text-gray-600 uppercase"
-            >
-              Email Address
-            </label>
-            <input
-              {...subOrgFormRegister('email')}
-              disabled={disabledSubmit}
-              id="email"
-              name="email"
-              type="email"
-              placeholder="someone@labeleven.dev"
-              autoComplete="email"
-              required
-              className="mt-1 block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-black focus:outline-none focus:ring-black sm:text-sm"
-            />
-          </div>
-          <button
-            type="submit"
-            aria-disabled={disabledSubmit}
-            disabled={disabledSubmit}
-            className="flex h-10 w-full items-center justify-center rounded-md border text-sm transition-all focus:outline-none"
-          >
-            Authenticate with Passkey
-            <span aria-live="polite" className="sr-only" role="status">
-              Loading...
-            </span>
-          </button>
+          {disabledSubmit ? (
+            <div className="kwl-loader m-auto"></div>
+          ) : (
+            <>
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-xs text-gray-600 uppercase"
+                >
+                  Email Address
+                </label>
+                <input
+                  {...subOrgFormRegister('email')}
+                  disabled={disabledSubmit}
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="someone@labeleven.dev"
+                  autoComplete="email"
+                  required
+                  className="mt-1 block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-black focus:outline-none focus:ring-black sm:text-sm"
+                />
+              </div>
+              <button
+                type="submit"
+                aria-disabled={disabledSubmit}
+                disabled={disabledSubmit}
+                className="flex h-10 w-full items-center justify-center rounded-md border text-sm transition-all focus:outline-none"
+              >
+                Authenticate with Passkey
+                <span aria-live="polite" className="sr-only" role="status">
+                  Loading...
+                </span>
+              </button>
+            </>
+          )}
         </form>
       </div>
     </div>

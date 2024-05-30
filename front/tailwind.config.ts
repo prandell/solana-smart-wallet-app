@@ -11,6 +11,7 @@ const config: Config = {
       'destructive-red': 'black',
       'subtle-accent': '#E5EAFF',
       'send-pill': '#FFFAED',
+      'logout-red': 'red',
       'receive-pill': '#FFFAED',
     },
   },

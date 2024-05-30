@@ -18,6 +18,7 @@ import { DropButton } from '@/components/DropButton';
 import { AlertBanner } from '@/components/AlertBanner';
 import { VersionedTransaction } from '@solana/web3.js';
 import { WalletWithBalance } from '@/models';
+import { AuthWidget } from '@/components/AuthWidget';
 
 type Stamper = IframeStamper | WebauthnStamper;
 
@@ -60,7 +61,7 @@ export default function Dashboard() {
     useForm<sendFormData>();
 
   const { data: key, error: keyError } = useSWR(getWalletUrl(), walletFetcher, {
-    refreshInterval: 10000,
+    refreshInterval: 5000,
   });
 
   useEffect(() => {
@@ -183,6 +184,9 @@ export default function Dashboard() {
 
   return (
     <div>
+      <div>
+        <AuthWidget />
+      </div>
       <div className="max-w-5xl mx-auto">
         <AlertBanner txHash={txHash} setTxHash={setTxHash}></AlertBanner>
         <section className="lg:bg-subtle-accent p-8 lg:mt-16 lg:border border-zinc-300 divide-y divide-zinc-300">
