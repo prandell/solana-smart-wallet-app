@@ -3,7 +3,6 @@ import base58 from 'bs58';
 import { UserWithWallet } from '../../../models';
 import { createTransferInstruction, getAssociatedTokenAddress, getOrCreateAssociatedTokenAccount, transfer } from '@solana/spl-token';
 import { addWrenAddressForUser } from '../db';
-import { inngest } from '../../client';
 
 function loadKeypairFromSecretKey(key: string) {
 	const decoded = base58.decode(key);
@@ -68,7 +67,7 @@ export async function createSolanaAccountAddSol(solanaAddress: string) {
  * @param env context
  * @returns signature of transaction and address of user associated token account
  */
-async function dropTokens(solAddress: string, env: Env): Promise<{ signature: string; tokenAccount: PublicKey }> {
+export async function dropTokens(solAddress: string, env: Env): Promise<{ signature: string; tokenAccount: PublicKey }> {
 	try {
 		const connection = new Connection(DEVNET_URL, 'confirmed');
 		const wrenTokenChest = loadKeypairFromSecretKey(env.WREN_TOKEN_OWNER_PRIVATE_KEY);
@@ -105,29 +104,6 @@ async function dropTokens(solAddress: string, env: Env): Promise<{ signature: st
 		throw new Error('❌ - Transaction failed');
 	}
 }
-
-/**
- * INNGEST droptokenUpdateUser background function
- */
-export const dropTokensUpdateUser = inngest.createFunction(
-	{ id: 'drop-tokens' },
-	{ event: 'app/wallet/drop-tokens' },
-	async ({ event, step }) => {
-		console.log(event);
-		const { data, user } = event;
-		const { env } = data;
-		const { wallet } = user as UserWithWallet;
-		const { solAddress } = wallet;
-
-		const { tokenAccount } = await step.run('drop-tokens', async () => {
-			return await dropTokens(solAddress, env);
-		});
-
-		if (!wallet.wrenAddress) {
-			await addWrenAddressForUser(user['user_id'], (tokenAccount as unknown as PublicKey).toBase58(), env.DB);
-		}
-	}
-);
 
 export function serialiseUnsignedTxn(txn: VersionedTransaction) {
 	return Buffer.from(txn.serialize()).toString('base64');

@@ -29,7 +29,7 @@ export function DropButton({ setTxHash }: DropButtonProps) {
           setDropping(false);
         } else {
           setTimeout(() => {
-            setTxHash(res.data['signature']);
+            // setTxHash(res.data['signature']);
             setDropping(false);
           }, 1500);
         }

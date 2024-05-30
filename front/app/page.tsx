@@ -60,7 +60,7 @@ export default function Dashboard() {
     useForm<sendFormData>();
 
   const { data: key, error: keyError } = useSWR(getWalletUrl(), walletFetcher, {
-    refreshInterval: 10000,
+    refreshInterval: 5000,
   });
 
   useEffect(() => {
@@ -191,7 +191,7 @@ export default function Dashboard() {
               <h3 className="text-3xl font-medium favorit mb-4">Your wallet</h3>
               <p className="text-destructive-red text-sm mt-1">
                 Your wallet contains two accounts, an Ethereum and Solana
-                account (both on Devnet's)
+                account (both on Devnet&apos;s)
               </p>
             </div>
 

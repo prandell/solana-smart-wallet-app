@@ -1,5 +1,4 @@
 import { serve } from 'inngest/cloudflare';
-import { fns } from './inngest';
 import { WalletWithBalance, mapFromDbUser, mapfromDbWallet } from './models';
 import { createUser, findUserByEmail, findUserBySubOrgId, findWalletForUser, saveWalletForUser } from './inngest/functions/db';
 import { createSession, getSessionData } from './inngest/functions/kv';
@@ -13,7 +12,8 @@ import {
 	serialiseUnsignedTxn,
 } from './inngest/functions/solana';
 import { forwardSignedRequest, getCreateUserSubOrgPayload, getTurnkeyAPIClient } from './inngest/functions/turnkey';
-import { inngest } from './inngest/client';
+import { getInngestAndFunctions } from './inngest';
+import { Inngest } from 'inngest';
 
 /**
  * Welcome to Cloudflare Workers! This is your first worker.
@@ -36,6 +36,7 @@ export interface Env {
 	WREN_TOKEN_MINT: string;
 	WREN_TOKEN_ACCOUNT: string;
 	INGEST_SIGNING_KEY: string;
+	INNGEST_EVENT_KEY: string;
 	DB: D1Database;
 	sessionstore: KVNamespace;
 }
@@ -52,6 +53,7 @@ export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		const origin = request.headers.get('Origin') || '';
 		const { pathname } = new URL(request.url);
+		const { inngest, fns } = getInngestAndFunctions(env.INNGEST_EVENT_KEY);
 
 		//Ensure Inngest handles itself
 		if (pathname === '/api/inngest') {
@@ -63,7 +65,7 @@ export default {
 		}
 
 		//Main handler
-		return await handle(request, env);
+		return await handle(request, env, inngest);
 	},
 };
 
@@ -72,11 +74,11 @@ export default {
  * @param request
  * @returns
  */
-async function handle(request: Request, env: Env) {
+async function handle(request: Request, env: Env, inngest: Inngest) {
 	if (request.method === 'OPTIONS') {
 		return handleOptions(request);
 	} else if (request.method === 'POST') {
-		return await handlePost(request, env);
+		return await handlePost(request, env, inngest);
 	} else if (request.method === 'GET' || request.method == 'HEAD') {
 		return await handleGet(request, env);
 	} else {
@@ -107,7 +109,7 @@ function handleOptions(request: Request) {
 	}
 }
 
-async function handlePost(request: Request, env: Env) {
+async function handlePost(request: Request, env: Env, inngest: Inngest) {
 	const { pathname } = new URL(request.url);
 	if (request.headers.get('Content-Type') !== 'application/json') {
 		return new Response(null, {
