@@ -22,7 +22,7 @@ export async function findWalletForUser(userId: number, DB: D1Database): Promise
 	return await DB.prepare('SELECT * FROM Wallets WHERE user_id = ?;').bind(userId).first();
 }
 
-export async function addWrenAddressForUser(userId: string, wrenAddress: string, DB: D1Database) {
+export async function addWrenAddressForUser(userId: number, wrenAddress: string, DB: D1Database) {
 	await DB.prepare('UPDATE Wallets SET wren_address = ? WHERE user_id = ?;').bind(wrenAddress, userId).run();
 }
 

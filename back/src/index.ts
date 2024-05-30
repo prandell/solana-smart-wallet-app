@@ -42,7 +42,7 @@ export interface Env {
 }
 
 const CORS_HEADERS = {
-	'Access-Control-Allow-Origin': 'http://localhost:3000',
+	'Access-Control-Allow-Origin': 'https://l11-homework.vercel.app',
 	'Access-Control-Allow-Headers': 'Content-Type, sessionId',
 	'Access-Control-Allow-Methods': 'GET,HEAD,POST,OPTIONS',
 	'Access-Control-Max-Age': '86400',
@@ -51,7 +51,10 @@ const CORS_HEADERS = {
 
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-		const origin = request.headers.get('Origin') || '';
+		const origin = request.headers.get('Origin');
+		if (origin === 'http://localhost:3000' || origin === 'https://l11-homework.vercel.app') {
+			CORS_HEADERS['Access-Control-Allow-Origin'] = origin;
+		}
 		const { pathname } = new URL(request.url);
 		const { inngest, fns } = getInngestAndFunctions(env.INNGEST_EVENT_KEY);
 

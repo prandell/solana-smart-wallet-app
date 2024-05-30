@@ -60,7 +60,7 @@ export default function Dashboard() {
     useForm<sendFormData>();
 
   const { data: key, error: keyError } = useSWR(getWalletUrl(), walletFetcher, {
-    refreshInterval: 5000,
+    refreshInterval: 10000,
   });
 
   useEffect(() => {

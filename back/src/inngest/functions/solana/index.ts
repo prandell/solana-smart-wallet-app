@@ -34,8 +34,10 @@ export interface Env {
 async function airdropIfRequired(connection: Connection, pubkey: PublicKey, amount: number, minBal: number) {
 	const balance = await connection.getBalance(pubkey, 'confirmed');
 	if (balance < minBal) {
+		console.log('requesting airdrop')
 		const airdropTransactionSignature = await connection.requestAirdrop(pubkey, amount);
 		const latestBlockHash = await connection.getLatestBlockhash();
+		console.log('confirmating transaction')
 		await connection.confirmTransaction(
 			{
 				blockhash: latestBlockHash.blockhash,
@@ -44,7 +46,7 @@ async function airdropIfRequired(connection: Connection, pubkey: PublicKey, amou
 			},
 			'finalized'
 		);
-		return connection.getBalance(pubkey, 'finalized');
+		return await connection.getBalance(pubkey, 'finalized');
 	}
 	return balance;
 }
@@ -58,16 +60,29 @@ export async function createSolanaAccountAddSol(solanaAddress: string) {
 	const pubKey = new PublicKey(solanaAddress);
 	try {
 		await airdropIfRequired(connection, pubKey, 1 * LAMPORTS_PER_SOL, 0.5 * LAMPORTS_PER_SOL);
-	} catch (e) {}
+	} catch (e) {
+		console.log(e);
+	}
+}
+
+export async function createWrenTokenAccounts(solAddress: string, env: Env) {
+	const connection = new Connection(DEVNET_URL, 'confirmed');
+	const wrenTokenChest = loadKeypairFromSecretKey(env.WREN_TOKEN_OWNER_PRIVATE_KEY);
+	// Add the recipient public key here.
+	const recipient = new PublicKey(solAddress);
+
+	const tokenMintAccount = new PublicKey(env.WREN_TOKEN_MINT);
+	const destinationTokenAccount = await getOrCreateAssociatedTokenAccount(connection, wrenTokenChest, tokenMintAccount, recipient);
+	return destinationTokenAccount.address;
 }
 
 /**
- * Airdrop Wren tokens to provided b58 public address
+ * Airdrop Wren tokens to provided b58 public address.
  * @param solAddress b58 public address string
  * @param env context
  * @returns signature of transaction and address of user associated token account
  */
-export async function dropTokens(solAddress: string, env: Env): Promise<{ signature: string; tokenAccount: PublicKey }> {
+export async function dropTokens(solAddress: string, env: Env): Promise<{ signature: string }> {
 	try {
 		const connection = new Connection(DEVNET_URL, 'confirmed');
 		const wrenTokenChest = loadKeypairFromSecretKey(env.WREN_TOKEN_OWNER_PRIVATE_KEY);
@@ -77,12 +92,7 @@ export async function dropTokens(solAddress: string, env: Env): Promise<{ signat
 		const tokenMintAccount = new PublicKey(env.WREN_TOKEN_MINT);
 
 		console.log('Getting/creating party token accounts ...');
-		const sourceTokenAccount = await getOrCreateAssociatedTokenAccount(
-			connection,
-			wrenTokenChest,
-			tokenMintAccount,
-			wrenTokenChest.publicKey
-		);
+		const sourceTokenAccount = await getAssociatedTokenAddress(tokenMintAccount, wrenTokenChest.publicKey);
 		const destinationTokenAccount = await getOrCreateAssociatedTokenAccount(connection, wrenTokenChest, tokenMintAccount, recipient);
 
 		// Transfer the tokens
@@ -90,7 +100,7 @@ export async function dropTokens(solAddress: string, env: Env): Promise<{ signat
 		const signature = await transfer(
 			connection,
 			wrenTokenChest,
-			sourceTokenAccount.address,
+			sourceTokenAccount,
 			destinationTokenAccount.address,
 			wrenTokenChest,
 			1 * MINOR_WREN_UNITS_PER_MAJOR_UNITS
@@ -98,7 +108,7 @@ export async function dropTokens(solAddress: string, env: Env): Promise<{ signat
 
 		console.log(`✅ Transaction confirmed - https://explorer.solana.com/tx/${signature}?cluster=devnet`);
 
-		return { signature, tokenAccount: destinationTokenAccount.address };
+		return { signature };
 	} catch (e) {
 		console.log(e);
 		throw new Error('❌ - Transaction failed');

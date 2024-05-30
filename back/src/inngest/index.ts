@@ -1,5 +1,5 @@
 import { Inngest } from 'inngest';
-import { dropTokens } from './functions/solana';
+import { createWrenTokenAccounts, dropTokens } from './functions/solana';
 import { UserWithWallet } from '../models';
 import { addWrenAddressForUser } from './functions/db';
 import { PublicKey } from '@solana/web3.js';
@@ -15,16 +15,17 @@ export const getInngestAndFunctions = (eventKey: string) => {
 		async ({ event, step }) => {
 			const { data, user } = event;
 			const { env } = data;
-			const { wallet } = user as UserWithWallet;
-			const { solAddress } = wallet;
+			const { wallet, userId } = user as UserWithWallet;
+			const { solAddress, wrenAddress } = wallet;
 
-			const { tokenAccount } = await step.run('drop-tokens', async () => {
+			if (!wrenAddress) {
+				const tokenAccount = await createWrenTokenAccounts(solAddress, env);
+				await addWrenAddressForUser(userId, tokenAccount.toBase58(), env.DB);
+			}
+
+			await step.run('drop-tokens', async () => {
 				return await dropTokens(solAddress, env);
 			});
-
-			if (!wallet.wrenAddress) {
-				await addWrenAddressForUser(user['user_id'], (tokenAccount as unknown as PublicKey).toBase58(), env.DB);
-			}
 		}
 	);
 
