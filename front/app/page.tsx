@@ -8,7 +8,7 @@ import { IframeStamper } from '@turnkey/iframe-stamper';
 import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import useSWR from 'swr';
 import { TurnkeyClient } from '@turnkey/http';
@@ -19,6 +19,7 @@ import { AlertBanner } from '@/components/AlertBanner';
 import { VersionedTransaction } from '@solana/web3.js';
 import { WalletWithBalance } from '@/models';
 import { AuthWidget } from '@/components/AuthWidget';
+import { client } from '@/trpc/client';
 
 type Stamper = IframeStamper | WebauthnStamper;
 
@@ -178,6 +179,10 @@ export default function Dashboard() {
     setDisabledSend(false);
   }
 
+  const trpcHello = useCallback(async () => {
+    await client.hello.query();
+  }, []);
+
   if (keyError) {
     console.error('failed to load wallet information:', keyError);
   }
@@ -197,6 +202,9 @@ export default function Dashboard() {
                 Your wallet contains two accounts, an Ethereum and Solana
                 account (both on Devnet&apos;s)
               </p>
+              <button type="button" onClick={trpcHello}>
+                TRPC HELLO
+              </button>
             </div>
 
             <div className="col-span-5 lg:col-span-3 sm:col-span-5">

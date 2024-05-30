@@ -1,27 +1,13 @@
 import { serve } from 'inngest/cloudflare';
 import { WalletWithBalance, mapFromDbUser, mapfromDbWallet } from './models';
-import {
-	addWrenAddressForUser,
-	createUser,
-	findUserByEmail,
-	findUserBySubOrgId,
-	findWalletForUser,
-	saveWalletForUser,
-} from './inngest/functions/db';
-import { createSession, deleteSession, getSessionData } from './inngest/functions/kv';
-import {
-	createSolanaAccountAddSol,
-	createWrenTokenAccounts,
-	deserialiseSignedTxn,
-	getSolBalance,
-	getTransferWrenTransaction,
-	getWrenBalance,
-	sendTransferWrenTokens,
-	serialiseUnsignedTxn,
-} from './inngest/functions/solana';
-import { forwardSignedRequest, getCreateUserSubOrgPayload, getTurnkeyAPIClient } from './inngest/functions/turnkey';
+import { addWrenAddressForUser, createUser, findUserByEmail, findUserBySubOrgId, findWalletForUser, saveWalletForUser } from './db';
+import { createSession, deleteSession, getSessionData } from './kv';
+import { createWrenTokenAccounts, getSolBalance, getTransferWrenTransaction, getWrenBalance, serialiseUnsignedTxn } from './solana';
+import { forwardSignedRequest, getCreateUserSubOrgPayload, getTurnkeyAPIClient } from './turnkey';
 import { getInngestAndFunctions } from './inngest';
 import { Inngest } from 'inngest';
+import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
+import { appRouter } from './trpc';
 
 /**
  * Welcome to Cloudflare Workers! This is your first worker.
@@ -77,6 +63,16 @@ export default {
 			})({ request, env: env as any });
 		}
 
+		//Ensure TRPC handles itself
+		if (pathname.startsWith('/trpc')) {
+			return fetchRequestHandler({
+				endpoint: '/trpc',
+				req: request,
+				router: appRouter,
+				createContext: () => ({ env }),
+			});
+		}
+
 		//Main handler
 		return await handle(request, env, inngest);
 	},
@@ -99,6 +95,27 @@ async function handle(request: Request, env: Env, inngest: Inngest) {
 			status: 405,
 			statusText: 'Method Not Allowed',
 		});
+	}
+}
+
+function handleOptionHeaders(request: Request) {
+	if (
+		request.headers.get('Origin') !== null &&
+		request.headers.get('Access-Control-Request-Method') !== null &&
+		request.headers.get('Access-Control-Request-Headers') !== null
+	) {
+		// Handle CORS pre-flight request.
+		return {
+			headers: CORS_HEADERS,
+			Allow: 'GET, HEAD, POST, OPTIONS',
+		};
+	} else {
+		// Handle standard OPTIONS request.
+		return {
+			headers: {
+				Allow: 'GET, HEAD, POST, OPTIONS',
+			},
+		};
 	}
 }
 
