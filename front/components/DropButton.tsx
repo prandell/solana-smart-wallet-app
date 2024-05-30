@@ -9,7 +9,7 @@ interface DropButtonProps {
   setTxHash: Dispatch<SetStateAction<string>>;
 }
 
-export function DropButton(props: DropButtonProps) {
+export function DropButton({ setTxHash }: DropButtonProps) {
   const [dropping, setDropping] = useState(false);
   const { mutate } = useSWRConfig();
 
@@ -29,7 +29,7 @@ export function DropButton(props: DropButtonProps) {
           setDropping(false);
         } else {
           setTimeout(() => {
-            props.setTxHash(res.data['signature']);
+            setTxHash(res.data['signature']);
             setDropping(false);
           }, 1500);
         }
@@ -37,7 +37,7 @@ export function DropButton(props: DropButtonProps) {
     }
 
     startDrop();
-  }, [dropping, mutate, props]);
+  }, [dropping]);
 
   //   if (props.dropsLeft == 0) {
   //     return <span>No more drops left! 😭</span>;

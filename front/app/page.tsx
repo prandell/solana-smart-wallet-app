@@ -16,33 +16,22 @@ import { getItemWithExpiry } from '@/utils/localStorage';
 import { TurnkeySigner } from '@turnkey/solana';
 import { DropButton } from '@/components/DropButton';
 import { AlertBanner } from '@/components/AlertBanner';
-import {
-  VersionedTransaction,
-} from '@solana/web3.js';
+import { VersionedTransaction } from '@solana/web3.js';
+import { WalletWithBalance } from '@/models';
 
 type Stamper = IframeStamper | WebauthnStamper;
-
-type Wallet = {
-  data: {
-    wallet_id?: string;
-    eth_address?: string;
-    user_id?: number;
-    sol_address?: string;
-    sol_balance?: string;
-    wren_balance?: string;
-    wren_address?: string;
-  };
-};
 
 type sendFormData = {
   destination: string;
   amount: string;
 };
 
-async function walletFetcher(url: string): Promise<Wallet> {
+async function walletFetcher(
+  url: string
+): Promise<{ data: null | WalletWithBalance }> {
   if (!getItemWithExpiry('sessionId')) {
     return {
-      data: {},
+      data: null,
     };
   }
   let response = await axios.get(url, {
@@ -56,7 +45,7 @@ async function walletFetcher(url: string): Promise<Wallet> {
   } else {
     // Other status codes indicate an error of some sort
     return {
-      data: {},
+      data: null,
     };
   }
 }
@@ -71,7 +60,7 @@ export default function Dashboard() {
     useForm<sendFormData>();
 
   const { data: key, error: keyError } = useSWR(getWalletUrl(), walletFetcher, {
-    refreshInterval: 5000,
+    refreshInterval: 10000,
   });
 
   useEffect(() => {
@@ -83,7 +72,7 @@ export default function Dashboard() {
   }, [state, router]);
 
   useEffect(() => {
-    if (key && key.data && key.data['sol_balance'] === '0.00') {
+    if (key && key.data && key.data.solBalance === '0.00') {
       setDisabledSend(true);
     } else {
       setDisabledSend(false);
@@ -135,13 +124,13 @@ export default function Dashboard() {
       client,
     });
 
-    if (key && key.data['sol_address']) {
-      await signer.addSignature(txData.txn, key.data['sol_address']);
+    if (key && key.data?.solAddress) {
+      await signer.addSignature(txData.txn, key.data.solAddress);
 
       const sendRes = await axios.post(
         sendTxUrl(),
         {
-          signedSendTx: Buffer.from(txData.txn.serialize()).toString('base64')
+          signedSendTx: Buffer.from(txData.txn.serialize()).toString('base64'),
         },
         {
           withCredentials: true,
@@ -209,9 +198,7 @@ export default function Dashboard() {
             <div className="col-span-5 lg:col-span-3 sm:col-span-5">
               <div className="mb-4">
                 <span className="font-semibold mr-2">Sol Address:</span>
-                <span className="font-mono">
-                  {key && key.data['sol_address']}
-                </span>
+                <span className="font-mono">{key && key.data?.solAddress}</span>
                 <br />
                 {key ? (
                   <Link
@@ -219,7 +206,7 @@ export default function Dashboard() {
                     target="_blank"
                     href={
                       'https://explorer.solana.com/address/' +
-                      key.data['sol_address'] +
+                      key.data?.solAddress +
                       '?cluster=devnet'
                     }
                   >
@@ -237,9 +224,7 @@ export default function Dashboard() {
               </div>
               <div className="mb-4">
                 <span className="font-semibold mr-2">Eth Address:</span>
-                <span className="font-mono">
-                  {key && key.data['eth_address']}
-                </span>
+                <span className="font-mono">{key && key.data?.ethAddress}</span>
                 <br />
                 {key ? (
                   <Link
@@ -247,7 +232,7 @@ export default function Dashboard() {
                     target="_blank"
                     href={
                       'https://sepolia.etherscan.io/address/' +
-                      key.data['eth_address']
+                      key.data?.ethAddress
                     }
                   >
                     View on Etherscan{' '}
@@ -265,7 +250,7 @@ export default function Dashboard() {
               <p>
                 <span className="font-semibold mr-2">Balance:</span>
                 <span className="font-mono">
-                  {key ? key.data['sol_balance'] ?? '_ . __' : '_ . __'} Sol
+                  {key ? key.data?.solBalance ?? '_ . __' : '_ . __'} Sol
                 </span>
                 <br />
               </p>
@@ -292,7 +277,7 @@ export default function Dashboard() {
                 <div className="mb-4">
                   <span className="font-semibold mr-2">Wren Address:</span>
                   <span className="font-mono">
-                    {key && key.data['wren_address']}
+                    {key && key.data?.wrenAddress}
                   </span>
                   <br />
                   {key ? (
@@ -301,7 +286,7 @@ export default function Dashboard() {
                       target="_blank"
                       href={
                         'https://explorer.solana.com/address/' +
-                        key.data['wren_address'] +
+                        key.data?.wrenAddress +
                         '?cluster=devnet'
                       }
                     >
@@ -321,8 +306,7 @@ export default function Dashboard() {
                   <p className="items-center text-center justify-center flex">
                     <span className="font-semibold mr-2">Balance:</span>
                     <span className="font-mono">
-                      {key ? key.data['wren_balance'] ?? '_ . __' : '_ . __'}{' '}
-                      Wren
+                      {key ? key.data?.wrenBalance ?? '_ . __' : '_ . __'} Wren
                     </span>
                     <br />
                   </p>

@@ -11,7 +11,8 @@ import {
 } from 'react';
 import { whoamiUrl } from '@/utils/urls';
 import useSWR from 'swr';
-import { TURNKEY_BUNDLE_KEY, getItemWithExpiry } from '@/utils/localStorage';
+import { getItemWithExpiry } from '@/utils/localStorage';
+import { User } from '@/models';
 
 type AuthState = {
   isLoaded: boolean;
@@ -30,7 +31,7 @@ const initialState: AuthState = {
 };
 
 async function authStateFetcher(url: string): Promise<AuthState> {
-  let response = await axios.get(url, {
+  let response = await axios.get<User>(url, {
     withCredentials: true,
     headers: { sessionId: getItemWithExpiry('sessionId') },
   });
@@ -38,18 +39,18 @@ async function authStateFetcher(url: string): Promise<AuthState> {
     return {
       isLoaded: true,
       isLoggedIn: true,
-      email: response.data['user_email'],
-      userId: response.data['user_id'],
-      subOrganizationId: response.data['sub_org_id'],
+      email: response.data.email,
+      userId: response.data.userId,
+      subOrganizationId: response.data.subOrgId,
     };
   } else if (response.status === 204) {
     // A 204 indicates "no current user"
     return {
       isLoaded: true,
       isLoggedIn: false,
-      email: response.data['user_email'],
-      userId: response.data['user_id'],
-      subOrganizationId: response.data['sub_org_id'],
+      email: response.data.email,
+      userId: response.data.userId,
+      subOrganizationId: response.data.subOrgId,
     };
   } else {
     // Other status codes indicate an error of some sort

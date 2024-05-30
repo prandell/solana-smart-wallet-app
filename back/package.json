@@ -22,6 +22,7 @@
     "@turnkey/http": "^2.10.0",
     "@turnkey/sdk-server": "^0.2.0",
     "@turnkey/solana": "^0.3.5",
-    "bs58": "^5.0.0"
+    "bs58": "^5.0.0",
+    "inngest": "^3.19.8"
   }
 }
