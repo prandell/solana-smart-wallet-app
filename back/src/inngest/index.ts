@@ -3,7 +3,7 @@ import { createSolanaAccountAddSol, deserialiseSignedTxn, dropTokens, sendTransf
 import { UserWithWallet } from '../models';
 
 export const getInngestAndFunctions = (eventKey: string) => {
-	const inngest = new Inngest({ id: 'my-app', eventKey, isDev: true, baseUrl: 'http://localhost:8288' });
+	const inngest = new Inngest({ id: 'my-app', eventKey });
 	/**
 	 * INNGEST droptokenUpdateUser background function
 	 */
