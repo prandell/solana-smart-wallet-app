@@ -16,7 +16,12 @@ import { getItemWithExpiry } from '@/utils/localStorage';
 import { TurnkeySigner } from '@turnkey/solana';
 import { DropButton } from '@/components/DropButton';
 import { AlertBanner } from '@/components/AlertBanner';
-import { VersionedTransaction } from '@solana/web3.js';
+import {
+  Connection,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  VersionedTransaction,
+} from '@solana/web3.js';
 import { WalletWithBalance } from '@/models';
 import { AuthWidget } from '@/components/AuthWidget';
 
@@ -26,6 +31,8 @@ type sendFormData = {
   destination: string;
   amount: string;
 };
+
+const DEVNET_URL = 'https://api.devnet.solana.com';
 
 async function walletFetcher(
   url: string
@@ -54,6 +61,7 @@ async function walletFetcher(
 export default function Dashboard() {
   const { state } = useAuth();
   const [disabledSend, setDisabledSend] = useState(false);
+  const [dropping, setDropping] = useState(false);
   const [txHash, setTxHash] = useState('');
 
   const router = useRouter();
@@ -182,6 +190,21 @@ export default function Dashboard() {
     console.error('failed to load wallet information:', keyError);
   }
 
+  async function requestAirdrop() {
+    if (key?.data?.solAddress) {
+      try {
+        setDropping(true);
+        const connection = new Connection(DEVNET_URL, 'confirmed');
+        const pubkey = new PublicKey(key.data.solAddress);
+        await connection.requestAirdrop(pubkey, LAMPORTS_PER_SOL);
+        setDropping(false);
+      } catch (e) {
+        alert("You're being too greedy. Wait til tomorrow");
+        setDropping(false);
+      }
+    }
+  }
+
   return (
     <div>
       <div>
@@ -251,13 +274,20 @@ export default function Dashboard() {
                   </Link>
                 ) : null}
               </div>
-              <p>
+              <div className="flex flex-row items-center">
                 <span className="font-semibold mr-2">Balance:</span>
                 <span className="font-mono">
                   {key ? key.data?.solBalance ?? '_ . __' : '_ . __'} Sol
                 </span>
                 <br />
-              </p>
+                <button
+                  type="button"
+                  onClick={requestAirdrop}
+                  className="flex ml-[60px] rounded-md bg-receive-pill px-7 py-2 text-sm font-semibold text-black shadow-sm hover:bg-orange-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75"
+                >
+                  {dropping ? 'Pouring...' : 'Top me up'}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -358,7 +388,7 @@ export default function Dashboard() {
                 <button
                   type="submit"
                   disabled={disabledSend}
-                  className="block flex-none ml-1 rounded-md bg-send-pill px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75"
+                  className="block flex-none ml-1 rounded-md bg-send-pill px-4 py-2 text-sm font-semibold text-black shadow-sm hover:bg-orange-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75"
                 >
                   Send
                 </button>

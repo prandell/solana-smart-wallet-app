@@ -37,7 +37,7 @@ export function AuthWidget() {
         <div className="text-right pt-5 mr-10">
           <button
             onClick={handleLogout}
-            className="inline-block ml-2 rounded-md border-[1px] bg-white px-6 py-3 text-center text-sm font-semibold text-destructive-red shadow-sm hover:logout-red hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            className="inline-block ml-2 rounded-md border-[1px] bg-white px-6 py-3 text-center text-sm font-semibold text-black shadow-sm hover:bg-red-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
           >
             Sign out
           </button>

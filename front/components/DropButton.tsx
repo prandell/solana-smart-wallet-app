@@ -53,7 +53,7 @@ export function DropButton({ setTxHash }: DropButtonProps) {
       onClick={() => {
         setDropping(true);
       }}
-      className="flex m-auto rounded-md bg-receive-pill px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75"
+      className="flex ml-20 rounded-md bg-receive-pill px-4 py-2 text-sm font-semibold text-black shadow-sm hover:bg-orange-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75"
     >
       {dropping ? 'Drop in progress...' : 'Give me Wren'}
     </button>

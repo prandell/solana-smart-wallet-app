@@ -1,5 +1,5 @@
 import { Inngest } from 'inngest';
-import { createSolanaAccountAddSol, deserialiseSignedTxn, dropTokens, sendTransferWrenTokens } from './functions/solana';
+import { createSolanaAccountAddSol, deserialiseSignedTxn, dropTokens, sendTransferWrenTokens } from '../solana';
 import { UserWithWallet } from '../models';
 
 export const getInngestAndFunctions = (eventKey: string) => {

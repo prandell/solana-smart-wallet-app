@@ -1,4 +1,4 @@
-import { DbUser, DbWallet } from '../../../models';
+import { DbUser, DbWallet } from '../models';
 
 export async function createUser(email: string, subOrgId: string, DB: D1Database) {
 	await DB.prepare('INSERT INTO Users (user_email, sub_org_id) VALUES (?, ?);').bind(email, subOrgId).run();

@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import colors from 'tailwindcss/colors';
 
 const config: Config = {
   content: [
@@ -8,6 +9,7 @@ const config: Config = {
   ],
   theme: {
     colors: {
+      ...colors,
       'destructive-red': 'black',
       'subtle-accent': '#E5EAFF',
       'send-pill': '#FFFAED',
