@@ -41,7 +41,7 @@ export function AuthWidget() {
           >
             Sign out
           </button>
-          <p className="mt-2 text-xs leading-5 text-white">
+          <p className="mt-2 text-xs leading-5 text-black">
             Signed in as {state.email}
           </p>
         </div>

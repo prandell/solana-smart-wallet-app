@@ -223,14 +223,23 @@ async function handlePost(request: Request, env: Env, inngest: Inngest) {
 				if (dbWallet) {
 					const { wrenAddress, solAddress } = mapfromDbWallet(dbWallet);
 
+					//Call this first, which will wait for the below event to complete
+					const { ids } = await inngest.send({
+						name: 'app/wallet/drop-tokens',
+						user: { ...user, wallet: mapfromDbWallet(dbWallet) },
+						data: { env },
+					});
+
 					//This has to happen here, as D1 cannot natively be called within inngest functions
 					if (!wrenAddress) {
 						const tokenAccount = await createWrenTokenAccounts(solAddress, env);
+						console.log(tokenAccount);
 						await addWrenAddressForUser(user.userId, tokenAccount.toBase58(), env.DB);
 					}
 
-					const { ids } = await inngest.send({
-						name: 'app/wallet/drop-tokens',
+					//Above event execution is waiting for this event
+					await inngest.send({
+						name: 'app/wallet/wren.created',
 						user: { ...user, wallet: mapfromDbWallet(dbWallet) },
 						data: { env },
 					});

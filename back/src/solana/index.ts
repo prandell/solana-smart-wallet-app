@@ -1,16 +1,30 @@
 import {
+	Commitment,
 	Connection,
 	Keypair,
 	LAMPORTS_PER_SOL,
 	NonceAccount,
 	PublicKey,
+	Signer,
 	SystemProgram,
 	TransactionMessage,
 	VersionedTransaction,
 } from '@solana/web3.js';
 import base58 from 'bs58';
 import { Buffer } from 'node:buffer';
-import { createTransferInstruction, getAssociatedTokenAddress, getOrCreateAssociatedTokenAccount } from '@solana/spl-token';
+import {
+	ASSOCIATED_TOKEN_PROGRAM_ID,
+	Account,
+	TOKEN_PROGRAM_ID,
+	TokenAccountNotFoundError,
+	TokenInvalidAccountOwnerError,
+	createAssociatedTokenAccountInstruction,
+	createTransferInstruction,
+	getAccount,
+	getAssociatedTokenAddress,
+	getAssociatedTokenAddressSync,
+	getOrCreateAssociatedTokenAccount,
+} from '@solana/spl-token';
 
 function loadKeypairFromSecretKey(key: string) {
 	const decoded = base58.decode(key);
@@ -21,7 +35,7 @@ const DEVNET_URL = 'https://api.devnet.solana.com';
 // Wren token has two decimal places
 const MINOR_WREN_UNITS_PER_MAJOR_UNITS = Math.pow(10, 2);
 
-export interface Env {
+export interface DupeEnv {
 	TURNKEY_API_PRIVATE_KEY: string;
 	TURNKEY_API_PUBLIC_KEY: string;
 	TURNKEY_ORGANIZATION_ID: string;
@@ -77,18 +91,18 @@ export async function createSolanaAccountAddSol(solanaAddress: string) {
 	}
 }
 
-export async function createWrenTokenAccounts(solAddress: string, env: Env) {
+export async function createWrenTokenAccounts(solAddress: string, env: DupeEnv) {
 	const connection = new Connection(DEVNET_URL, 'confirmed');
 	const wrenTokenChest = loadKeypairFromSecretKey(env.WREN_TOKEN_OWNER_PRIVATE_KEY);
 	// Add the recipient public key here.
 	const recipient = new PublicKey(solAddress);
 
 	const tokenMintAccount = new PublicKey(env.WREN_TOKEN_MINT);
-	const destinationTokenAccount = await getOrCreateAssociatedTokenAccount(connection, wrenTokenChest, tokenMintAccount, recipient);
-	return destinationTokenAccount.address;
+	const destinationTokenAccount = await getOrCreateAssociatedWrenAcount(connection, wrenTokenChest, tokenMintAccount, recipient, env);
+	return destinationTokenAccount;
 }
 
-export async function getNonceAndAdvance(env: Env) {
+export async function getNonceAndAdvance(env: DupeEnv) {
 	const nonceKeypair = Keypair.fromSecretKey(base58.decode(env.NONCE_ACCOUNT_PK));
 	const nonceAuthKP = Keypair.fromSecretKey(base58.decode(env.NONCE_AUTH_PK));
 	const connection = new Connection(DEVNET_URL, 'confirmed');
@@ -107,6 +121,62 @@ export async function getNonceAndAdvance(env: Env) {
 	}
 	return {};
 }
+/**
+ * Custom implementation that avoids confirmation due to wrangler
+ * @param connection
+ * @param payer
+ * @param mint
+ * @param owner
+ * @param env
+ * @param allowOwnerOffCurve
+ * @param commitment
+ * @param programId
+ * @param associatedTokenProgramId
+ * @returns
+ */
+export async function getOrCreateAssociatedWrenAcount(
+	connection: Connection,
+	payer: Signer,
+	mint: PublicKey,
+	owner: PublicKey,
+	env: DupeEnv,
+	allowOwnerOffCurve = false,
+	commitment?: Commitment,
+	programId = TOKEN_PROGRAM_ID,
+	associatedTokenProgramId = ASSOCIATED_TOKEN_PROGRAM_ID
+): Promise<PublicKey> {
+	const associatedToken = getAssociatedTokenAddressSync(mint, owner, allowOwnerOffCurve, programId, associatedTokenProgramId);
+
+	let account: Account;
+	try {
+		account = await getAccount(connection, associatedToken, commitment, programId);
+	} catch (error: unknown) {
+		if (error instanceof TokenAccountNotFoundError || error instanceof TokenInvalidAccountOwnerError) {
+			try {
+				const { advanceIX, nonceAccount, nonceAuth } = await getNonceAndAdvance(env);
+				if (!advanceIX || !nonceAccount || !nonceAuth) {
+					throw new Error('failed to advance nonce');
+				}
+				const messageV0 = new TransactionMessage({
+					payerKey: payer.publicKey,
+					instructions: [
+						advanceIX,
+						createAssociatedTokenAccountInstruction(payer.publicKey, associatedToken, owner, mint, programId, associatedTokenProgramId),
+					],
+					recentBlockhash: nonceAccount.nonce,
+				}).compileToV0Message();
+				const txn = new VersionedTransaction(messageV0);
+
+				txn.sign([nonceAuth, payer]);
+				await connection.sendTransaction(txn, { maxRetries: 2 });
+			} catch (error: unknown) {}
+		} else {
+			throw error;
+		}
+	}
+
+	return associatedToken;
+}
 
 /**
  * Airdrop Wren tokens to provided b58 public address.
@@ -114,7 +184,7 @@ export async function getNonceAndAdvance(env: Env) {
  * @param env context
  * @returns signature of transaction and address of user associated token account
  */
-export async function dropTokens(solAddress: string, env: Env): Promise<{ signature: string }> {
+export async function dropTokens(solAddress: string, env: DupeEnv): Promise<{ signature: string }> {
 	try {
 		const connection = new Connection(DEVNET_URL, 'confirmed');
 		const wrenTokenChest = loadKeypairFromSecretKey(env.WREN_TOKEN_OWNER_PRIVATE_KEY);
@@ -198,7 +268,7 @@ export async function getWrenBalance(address: string, wrenChestPK: string, wrenM
 	return bal.value.uiAmountString;
 }
 
-export async function getTransferWrenTransaction(fromAddress: string, toAddress: string, amount: number, env: Env) {
+export async function getTransferWrenTransaction(fromAddress: string, toAddress: string, amount: number, env: DupeEnv) {
 	try {
 		const connection = new Connection(DEVNET_URL, 'confirmed');
 		const wrenTokenChest = loadKeypairFromSecretKey(env.WREN_TOKEN_OWNER_PRIVATE_KEY);
@@ -242,7 +312,7 @@ export async function getTransferWrenTransaction(fromAddress: string, toAddress:
 	}
 }
 
-export async function sendTransferWrenTokens(txn: VersionedTransaction, env: Env) {
+export async function sendTransferWrenTokens(txn: VersionedTransaction, env: DupeEnv) {
 	try {
 		const connection = new Connection(DEVNET_URL, 'confirmed');
 		const latestBlockHash = await connection.getLatestBlockhash();
